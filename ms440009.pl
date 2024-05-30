@@ -1,4 +1,8 @@
-% initSingleArray(+Name, +N, -ArrayWithName]) 
+% Michal Sobczak 
+% ms440009
+:- use_module(library(lists)).
+
+% initSingleArray(+Name, +N, -ArrayWithName) 
 initSingleArray(Name, N , [Name, A]) :-
     length(A, N),
     mapList(0, A).
@@ -15,7 +19,7 @@ initArray(N, [Name|RN], [AI|RA]) :-
     initSingleArray(Name, N, AI),
     initArray(N, RN, RA).
 
-% Funkcja która wczytuje dane z pliku i zwraca trojke:
+% Funkcja ktora wczytuje dane z pliku i zwraca trojke:
 % Variables    (V) - nazwy zmiennych 
 % Arrays       (A) - nazwy tablic
 % Instructions (I) - instrukcje
@@ -60,7 +64,7 @@ getNumber(I, P, [[I, V]|_], R):-
 getNumber(I, P, [[_, _]| Rest], R) :- 
     getNumber(I, P, Rest, R).
 
-% Ta funkcja służy do rozwijania wyrazen prostych.
+% Ta funkcja sluzy do rozwijania wyrazen prostych.
 % evalValue(+Wyrazenie, +Variables, +ArrayValues, +Id, -Result) 
 % gdzie Wyrazenie moze byc:
 % 1) array(Ident, Expr),
@@ -98,7 +102,7 @@ calculateLogical(N1, '<>', N2, R) :-
     (N1 \= N2 -> R = true ; R = false).
 
 % Ewaluacja wyrazen arytmetycznych
-%evalArithmetic(+Expr, -Result, +Variables, +ArrayValues, +Id)
+% evalArithmetic(+Expr, -Result, +Variables, +ArrayValues, +Id)
 evalArithmetic(E1 + E2, R, V, A, Id) :-
     evalArithmetic(E1, N1, V, A, Id),
     evalArithmetic(E2, N2, V, A, Id),
@@ -213,7 +217,7 @@ getArray(Ident, [[_, _] | Rest], A):-
     getArray(Ident, Rest, A).
 
 % Dostaje liste tablic i zmienia tylko tablice o nazwie Ident
-% replaceArray(+Ident, +Index, +R, +ArrayValues, -ArrayValuesPrim)
+% replaceArray(+Ident, +Index, +Result, +ArrayValues, -ArrayValuesPrim)
 replaceArray(Ident, I, R, AV, AVP):-
     getArray(Ident, AV, Array),
     replaceArrayWithIndex(I, R, Array, NewA),
@@ -263,7 +267,7 @@ makeStep(sekcja, Id, AP, V, AV, APP, V, AV) :-
     Jump is C + 1,
     replaceArrayWithIndex(Id, Jump, AP, APP).
 
-% step(+(_, _, Instructions), +state(ArrayProcess, Variables, ArrayValues), +Id, 
+% step(+(_, _, Instructions), +state(ArrayProcess, Variables, ArrayValues), ?Id, 
 %      -state(ArrayProcessPrim, VariablesPrim, ArrayValuesPrim)) 
 step((_, _, I), state(AP, V, AV), Id, state(APP, VP, AVP)) :-
     getInstruction(I, AP, Id, SI),
@@ -283,7 +287,7 @@ checkSafetyAll(I, S, VSI, VSO, C, P, N, F) :-
 
 checkSafetyAll(_,_,VSI,VSI,N, _, N,false) :- !.
 
-% Sprawdza ktore procesy są w sekcji krytycznej.
+% Sprawdza ktore procesy sa w sekcji krytycznej.
 % checkSafeStatement(+Instructions, ?Acc, ?Section, +ArrayProcess, ?Counter, +N) 
 checkSafeStatement(_, Acc, Acc, _, N, N).
 checkSafeStatement(I, Acc, S, AP, C, N) :-
@@ -293,12 +297,12 @@ checkSafeStatement(I, Acc, S, AP, C, N) :-
     checkSafeStatement(I, NewAcc, S, AP, NewC, N).
 
 % Funkcja ta sprawdza czy program jest bezpieczny. Najpierw sprawdza czy
-% konfiguracja w ktorej aktualnie się znajduje jest bezpieczna. Jezeli tak,
+% konfiguracja w ktorej aktualnie sie znajduje jest bezpieczna. Jezeli tak,
 % to iteruje sie po wszystkich procesach i wykonuje dla nich step i
-% rekurencyjnie wywoluje sama siebie, jeżeli stan jeszcze nie był odwiedzony.
+% rekurencyjnie wywoluje sama siebie, jezeli stan jeszcze nie byl odwiedzony.
 % Dzieki temu, ze stanow jest skonczenie wiele, to program ten sie zakonczy.
 
-%checkSafety(+Content, +state(ArrayProcess, +Variables, +ArrayValues),
+% checkSafety(+Content, +state(ArrayProcess, +Variables, +ArrayValues),
 %             +VisitedStatesInput, -VisitedStatesOutput, ?Path, +N, -Flag)
 checkSafety(_, S, VSI, VSI, _, _, false) :-
     member(S, VSI), !.
@@ -310,16 +314,17 @@ checkSafety(content(_, _, I ), state(AP, V, AV) , VSI, VSO, P, N, F):-
     (Len > 1 -> printError(S, P), F = true;  
     checkSafetyAll(I, state(AP, V, AV), [state(AP, V, AV) |VSI], VSO, 0, P, N, F)).
     
-%verify(+N, +Program)    
+% verify(+N, +Program)    
 verify(N, Program) :-
     (N < 1 -> write('Error: parametr '),write(N),
     write(' powinien byc liczba > 0'), !, fail ; true),
-    %(exists_file(Program) -> true ; write('Error: brak pliku o nazwie - '),
-    %write(Program), !, fail),
+    set_prolog_flag(fileerrors, off),
     uploadProgram(Program, Content),
     initState(Content, N, State),
     checkSafety(Content, State, [], _, [], N, Flag),
     (Flag -> true; 
-    write('Program jest poprawny (bezpieczny).'), nl), !.
+    write('Program jest poprawny (bezpieczny)'), nl), !.
 
-
+verify(_, Program):-
+    write('Error: brak pliku o nazwie - '), write(Program), !.
+        
